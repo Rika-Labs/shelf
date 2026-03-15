@@ -10,11 +10,17 @@ export type GitOverrides = {
 		url: string,
 		targetDir: string,
 		pin: Option.Option<RepoPin>,
+		depth: Option.Option<number>,
+		sparse: Option.Option<ReadonlyArray<string>>,
 	) => Effect.Effect<void, GitOperationError>;
-	readonly fetch?: (repoDir: string) => Effect.Effect<void, GitOperationError>;
+	readonly fetch?: (
+		repoDir: string,
+		depth: Option.Option<number>,
+	) => Effect.Effect<void, GitOperationError>;
 	readonly checkout?: (repoDir: string, ref: string) => Effect.Effect<void, GitOperationError>;
 	readonly pull?: (repoDir: string) => Effect.Effect<void, GitOperationError>;
 	readonly getDefaultBranch?: (repoDir: string) => Effect.Effect<string, GitOperationError>;
+	readonly lsRemoteTags?: (url: string) => Effect.Effect<string, GitOperationError>;
 };
 
 const defaultGitImpl = {
@@ -23,6 +29,7 @@ const defaultGitImpl = {
 	checkout: (): Effect.Effect<void, GitOperationError> => Effect.void,
 	pull: (): Effect.Effect<void, GitOperationError> => Effect.void,
 	getDefaultBranch: (): Effect.Effect<string, GitOperationError> => Effect.succeed("main"),
+	lsRemoteTags: (): Effect.Effect<string, GitOperationError> => Effect.succeed(""),
 };
 
 export const createMockGitLayer = (overrides: GitOverrides = {}): Layer.Layer<GitService> => {

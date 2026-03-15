@@ -16,6 +16,8 @@ export class RepoEntry extends Schema.Class<RepoEntry>("RepoEntry")({
 	url: Schema.String,
 	alias: Schema.String,
 	pin: Schema.OptionFromOptionalKey(RepoPin),
+	depth: Schema.OptionFromOptionalKey(Schema.Number),
+	sparse: Schema.OptionFromOptionalKey(Schema.Array(Schema.String)),
 	addedAt: Schema.String,
 	lastSyncedAt: Schema.OptionFromOptionalKey(Schema.String),
 }) {}
@@ -39,6 +41,8 @@ export const makeRepoEntry = (params: {
 	readonly url: string;
 	readonly alias: string;
 	readonly pin: Option.Option<RepoPin>;
+	readonly depth: Option.Option<number>;
+	readonly sparse: Option.Option<ReadonlyArray<string>>;
 	readonly addedAt: string;
 	readonly lastSyncedAt: Option.Option<string>;
 }): RepoEntry =>
@@ -46,6 +50,8 @@ export const makeRepoEntry = (params: {
 		url: params.url,
 		alias: params.alias,
 		pin: params.pin,
+		depth: params.depth,
+		sparse: params.sparse,
 		addedAt: params.addedAt,
 		lastSyncedAt: params.lastSyncedAt,
 	});

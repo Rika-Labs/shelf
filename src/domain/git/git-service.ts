@@ -12,23 +12,43 @@ export class GitService extends ServiceMap.Service<GitService>()("shelf/domain/g
 				url: string,
 				targetDir: string,
 				pin: Option.Option<RepoPin>,
+				depth: Option.Option<number>,
+				sparse: Option.Option<ReadonlyArray<string>>,
 			) {
 				const args = ["clone"];
+				if (Option.isSome(depth)) {
+					args.push("--depth", String(depth.value));
+				}
 				if (Option.isSome(pin)) {
 					const pinType = pin.value.type;
 					if (pinType === "branch" || pinType === "tag") {
 						args.push("--branch", pin.value.value);
 					}
 				}
+				if (Option.isSome(sparse)) {
+					args.push("--no-checkout");
+				}
 				args.push(url, targetDir);
 				yield* runGit(args);
+				if (Option.isSome(sparse)) {
+					yield* runGit(["sparse-checkout", "init", "--cone"], targetDir);
+					yield* runGit(["sparse-checkout", "set", ...sparse.value], targetDir);
+					yield* runGit(["checkout"], targetDir);
+				}
 				if (Option.isSome(pin) && pin.value.type === "commit") {
 					yield* runGit(["checkout", pin.value.value], targetDir);
 				}
 			}),
 
-			fetch: Effect.fn("GitService.fetch")(function* (repoDir: string) {
-				yield* runGit(["fetch", "--all", "--prune"], repoDir);
+			fetch: Effect.fn("GitService.fetch")(function* (
+				repoDir: string,
+				depth: Option.Option<number>,
+			) {
+				const args = ["fetch", "--all", "--prune"];
+				if (Option.isSome(depth)) {
+					args.push("--depth", String(depth.value));
+				}
+				yield* runGit(args, repoDir);
 			}),
 
 			checkout: Effect.fn("GitService.checkout")(function* (repoDir: string, ref: string) {
@@ -42,6 +62,10 @@ export class GitService extends ServiceMap.Service<GitService>()("shelf/domain/g
 			getDefaultBranch: Effect.fn("GitService.getDefaultBranch")(function* (repoDir: string) {
 				const ref = yield* runGit(["symbolic-ref", "refs/remotes/origin/HEAD", "--short"], repoDir);
 				return ref.replace("origin/", "");
+			}),
+
+			lsRemoteTags: Effect.fn("GitService.lsRemoteTags")(function* (url: string) {
+				return yield* runGit(["ls-remote", "--tags", url]);
 			}),
 		};
 	}),

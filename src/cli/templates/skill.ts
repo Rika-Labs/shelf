@@ -2,14 +2,14 @@ export const skillTemplate = `---
 name: shelf
 description: >
   Access code reference repositories managed by shelf. Repos are cached at
-  ~/.config/shelf/repos/{alias}/ and kept in sync. Use your native tools
+  ~/.agents/shelf/repos/{alias}/ and kept in sync. Use your native tools
   (Grep, Read, Glob) to explore them.
 ---
 
 # Shelf — Code Reference Repos
 
 Shelf maintains a local cache of code reference repositories at
-\`~/.config/shelf/repos/{alias}/\`.
+\`~/.agents/shelf/repos/{alias}/\`.
 
 ## Discovery
 
@@ -19,10 +19,10 @@ Run \`shelf list\` to see available repos and their local paths.
 
 Use your native tools directly on the repo directories:
 
-- **Search**: \`Grep\` or \`rg\` on \`~/.config/shelf/repos/{alias}/\`
+- **Search**: \`Grep\` or \`rg\` on \`~/.agents/shelf/repos/{alias}/\`
 - **Read files**: \`Read\` on any file in the repo
-- **Find files**: \`Glob\` with patterns like \`~/.config/shelf/repos/{alias}/**/*.ts\`
-- **Explore**: \`ls ~/.config/shelf/repos/{alias}/src/\`
+- **Find files**: \`Glob\` with patterns like \`~/.agents/shelf/repos/{alias}/**/*.ts\`
+- **Explore**: \`ls ~/.agents/shelf/repos/{alias}/src/\`
 
 ## Management Commands
 

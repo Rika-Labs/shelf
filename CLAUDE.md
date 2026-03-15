@@ -48,5 +48,5 @@ Dependency direction: `command → service → storage boundary`. Reverse import
 
 ## Storage
 
-- Config: `~/.config/shelf/config.json`
-- Repos: `~/.config/shelf/repos/{alias}/`
+- Config: `~/.agents/shelf/config.json`
+- Repos: `~/.agents/shelf/repos/{alias}/`

@@ -9,3 +9,8 @@ export class RepoAlreadyExistsError extends Schema.TaggedErrorClass<RepoAlreadyE
 	"RepoAlreadyExistsError",
 	{ alias: Schema.String },
 ) {}
+
+export class AutoPinResolutionError extends Schema.TaggedErrorClass<AutoPinResolutionError>()(
+	"AutoPinResolutionError",
+	{ message: Schema.String },
+) {}

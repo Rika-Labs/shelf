@@ -17,7 +17,7 @@ export class SyncService extends ServiceMap.Service<SyncService>()(
 			const doSync = (repo: RepoEntry): Effect.Effect<void, unknown, never> =>
 				Effect.gen(function* () {
 					const repoDir = config.repoPath(repo.alias);
-					yield* git.fetch(repoDir);
+					yield* git.fetch(repoDir, repo.depth);
 					if (Option.isSome(repo.pin)) {
 						const ref =
 							repo.pin.value.type === "branch"

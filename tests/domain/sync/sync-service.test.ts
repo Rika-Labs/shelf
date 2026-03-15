@@ -21,6 +21,8 @@ const makeTestRepo = (
 		alias: overrides.alias ?? "test-repo",
 		addedAt: "2026-01-01T00:00:00Z",
 		pin: overrides.pin ?? Option.none(),
+		depth: Option.none(),
+		sparse: Option.none(),
 		lastSyncedAt: overrides.lastSyncedAt ?? Option.none(),
 	});
 

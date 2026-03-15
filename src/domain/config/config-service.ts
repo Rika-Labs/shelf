@@ -7,7 +7,7 @@ import type { ShelfConfig } from "./config-schema";
 import { defaultConfig, decodeConfig, encodeConfig } from "./config-schema";
 import { ConfigParseError } from "./config-errors";
 
-const SHELF_DIR = join(homedir(), ".config", "shelf");
+const SHELF_DIR = join(homedir(), ".agents", "shelf");
 const CONFIG_PATH = join(SHELF_DIR, "config.json");
 const REPOS_DIR = join(SHELF_DIR, "repos");
 

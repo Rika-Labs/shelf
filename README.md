@@ -18,13 +18,13 @@ shelf add https://github.com/Effect-TS/effect.git
 shelf list
 ```
 
-Agents read repos directly with their native tools (`Grep`, `Read`, `Glob`) at `~/.config/shelf/repos/{alias}/`.
+Agents read repos directly with their native tools (`Grep`, `Read`, `Glob`) at `~/.agents/shelf/repos/{alias}/`.
 
 ## How It Works
 
 ```
 ┌──────────────┐       ┌──────────────┐       ┌──────────────────────────┐
-│  shelf add   │──────▶│  Git Clone   │──────▶│ ~/.config/shelf/repos/   │
+│  shelf add   │──────▶│  Git Clone   │──────▶│ ~/.agents/shelf/repos/   │
 │  shelf sync  │       │  + Pin/Sync  │       │   effect/                │
 │              │       │              │       │   react/                 │
 └──────────────┘       └──────────────┘       │   ...                    │

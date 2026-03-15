@@ -83,6 +83,36 @@ describe("ConfigService", () => {
 			expect(Option.isSome(decoded.repos[0]!.lastSyncedAt)).toBe(true);
 		});
 
+		test("round-trips config with depth and sparse fields", () => {
+			const raw = {
+				version: 1,
+				syncIntervalMinutes: 60,
+				repos: [
+					{
+						url: "https://github.com/test/repo.git",
+						alias: "test-repo",
+						addedAt: "2026-01-01T00:00:00Z",
+						depth: 1,
+						sparse: ["src", "packages/core"],
+					},
+				],
+			};
+			const decoded = decodeConfig(raw);
+			expect(decoded.repos.length).toBe(1);
+			expect(Option.isSome(decoded.repos[0]!.depth)).toBe(true);
+			if (Option.isSome(decoded.repos[0]!.depth)) {
+				expect(decoded.repos[0]!.depth.value).toBe(1);
+			}
+			expect(Option.isSome(decoded.repos[0]!.sparse)).toBe(true);
+			if (Option.isSome(decoded.repos[0]!.sparse)) {
+				expect(decoded.repos[0]!.sparse.value).toEqual(["src", "packages/core"]);
+			}
+			const reEncoded = encodeConfig(decoded);
+			const reDecoded = decodeConfig(reEncoded);
+			expect(Option.isSome(reDecoded.repos[0]!.depth)).toBe(true);
+			expect(Option.isSome(reDecoded.repos[0]!.sparse)).toBe(true);
+		});
+
 		test("decodes config with repos without optional fields", () => {
 			const raw = {
 				version: 1,
@@ -108,6 +138,8 @@ describe("ConfigService", () => {
 				url: "https://github.com/test/repo.git",
 				alias: "test",
 				pin: Option.some(new RepoPin({ type: "branch", value: "main" })),
+				depth: Option.none(),
+				sparse: Option.none(),
 				addedAt: "2026-01-01",
 				lastSyncedAt: Option.some("2026-01-01T12:00:00Z"),
 			});
@@ -120,6 +152,8 @@ describe("ConfigService", () => {
 				url: "https://github.com/test/repo.git",
 				alias: "test",
 				pin: Option.none(),
+				depth: Option.none(),
+				sparse: Option.none(),
 				addedAt: "2026-01-01",
 				lastSyncedAt: Option.none(),
 			});
@@ -158,7 +192,7 @@ describe("ConfigService", () => {
 			);
 			const path = svc.repoPath("my-repo");
 			expect(path).toContain("my-repo");
-			expect(path).toContain(".config/shelf/repos");
+			expect(path).toContain(".agents/shelf/repos");
 		});
 	});
 

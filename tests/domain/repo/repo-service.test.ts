@@ -36,6 +36,8 @@ describe("RepoService", () => {
 						"https://github.com/Effect-TS/effect.git",
 						Option.none(),
 						Option.none(),
+						Option.none(),
+						Option.none(),
 					);
 				}).pipe(Effect.provide(layer)),
 			);
@@ -52,6 +54,8 @@ describe("RepoService", () => {
 						"https://github.com/Effect-TS/effect.git",
 						Option.some("my-effect"),
 						Option.none(),
+						Option.none(),
+						Option.none(),
 					);
 				}).pipe(Effect.provide(layer)),
 			);
@@ -64,6 +68,8 @@ describe("RepoService", () => {
 				alias: "effect",
 				addedAt: "2026-01-01",
 				pin: Option.none(),
+				depth: Option.none(),
+				sparse: Option.none(),
 				lastSyncedAt: Option.none(),
 			});
 			const layer = buildRepoLayer({
@@ -77,6 +83,8 @@ describe("RepoService", () => {
 					const repo = yield* RepoService;
 					return yield* repo.add(
 						"https://github.com/Effect-TS/effect.git",
+						Option.none(),
+						Option.none(),
 						Option.none(),
 						Option.none(),
 					);
@@ -103,6 +111,8 @@ describe("RepoService", () => {
 						"https://github.com/test/repo.git",
 						Option.some("test"),
 						Option.some(new RepoPin({ type: "branch", value: "develop" })),
+						Option.none(),
+						Option.none(),
 					);
 				}).pipe(Effect.provide(layer)),
 			);
@@ -112,12 +122,59 @@ describe("RepoService", () => {
 			}
 		});
 
+		test("forwards depth and sparse to git clone", async () => {
+			let clonedDepth: Option.Option<number> = Option.none();
+			let clonedSparse: Option.Option<ReadonlyArray<string>> = Option.none();
+			const layer = buildRepoLayer(
+				{},
+				{
+					clone: (
+						_url: string,
+						_dir: string,
+						_pin: Option.Option<RepoPin>,
+						d: Option.Option<number>,
+						s: Option.Option<ReadonlyArray<string>>,
+					) => {
+						clonedDepth = d;
+						clonedSparse = s;
+						return Effect.void;
+					},
+				},
+			);
+			await Effect.runPromise(
+				Effect.gen(function* () {
+					const repo = yield* RepoService;
+					yield* repo.add(
+						"https://github.com/test/repo.git",
+						Option.some("test"),
+						Option.none(),
+						Option.some(1),
+						Option.some(["src", "packages/core"]),
+					);
+				}).pipe(Effect.provide(layer)),
+			);
+			expect(Option.isSome(clonedDepth)).toBe(true);
+			if (Option.isSome(clonedDepth)) {
+				expect(clonedDepth.value).toBe(1);
+			}
+			expect(Option.isSome(clonedSparse)).toBe(true);
+			if (Option.isSome(clonedSparse)) {
+				expect(clonedSparse.value).toEqual(["src", "packages/core"]);
+			}
+		});
+
 		test("handles various URL formats", async () => {
 			const layer = buildRepoLayer();
 			const gitSshResult = await Effect.runPromise(
 				Effect.gen(function* () {
 					const repo = yield* RepoService;
-					return yield* repo.add("git@github.com:user/my-lib.git", Option.none(), Option.none());
+					return yield* repo.add(
+						"git@github.com:user/my-lib.git",
+						Option.none(),
+						Option.none(),
+						Option.none(),
+						Option.none(),
+					);
 				}).pipe(Effect.provide(layer)),
 			);
 			expect(gitSshResult).toBe("my-lib");
@@ -131,6 +188,8 @@ describe("RepoService", () => {
 				alias: "test-repo",
 				addedAt: "2026-01-01",
 				pin: Option.none(),
+				depth: Option.none(),
+				sparse: Option.none(),
 				lastSyncedAt: Option.none(),
 			});
 			let savedConfig: typeof ShelfConfig.Type | undefined;
@@ -184,6 +243,8 @@ describe("RepoService", () => {
 				alias: "test-repo",
 				addedAt: "2026-01-01",
 				pin: Option.some(new RepoPin({ type: "branch", value: "main" })),
+				depth: Option.none(),
+				sparse: Option.none(),
 				lastSyncedAt: Option.some("2026-01-01T12:00:00Z"),
 			});
 			const layer = buildRepoLayer({
@@ -211,6 +272,8 @@ describe("RepoService", () => {
 				alias: "test-repo",
 				addedAt: "2026-01-01",
 				pin: Option.none(),
+				depth: Option.none(),
+				sparse: Option.none(),
 				lastSyncedAt: Option.none(),
 			});
 			const layer = buildRepoLayer(
@@ -256,6 +319,48 @@ describe("RepoService", () => {
 				}).pipe(Effect.provide(layer)),
 			);
 			expect(syncAllCalled).toBe(true);
+		});
+	});
+
+	describe("resolveAutoPin", () => {
+		test("resolves matching tag from package.json", async () => {
+			const lsRemoteOutput = [
+				"abc123\trefs/tags/v4.0.0-beta.31",
+				"def456\trefs/tags/v4.0.0-beta.31^{}",
+			].join("\n");
+			const layer = buildRepoLayer(
+				{},
+				{
+					lsRemoteTags: () => Effect.succeed(lsRemoteOutput),
+				},
+			);
+			const result = await Effect.runPromise(
+				Effect.gen(function* () {
+					const repo = yield* RepoService;
+					return yield* repo.resolveAutoPin("https://github.com/Effect-TS/effect.git");
+				}).pipe(Effect.provide(layer)),
+			);
+			expect(Option.isSome(result)).toBe(true);
+			if (Option.isSome(result)) {
+				expect(result.value.type).toBe("tag");
+				expect(result.value.value).toBe("v4.0.0-beta.31");
+			}
+		});
+
+		test("fails when package not in dependencies", async () => {
+			const layer = buildRepoLayer(
+				{},
+				{
+					lsRemoteTags: () => Effect.succeed(""),
+				},
+			);
+			const exit = await Effect.runPromiseExit(
+				Effect.gen(function* () {
+					const repo = yield* RepoService;
+					return yield* repo.resolveAutoPin("https://github.com/test/nonexistent-pkg.git");
+				}).pipe(Effect.provide(layer)),
+			);
+			expect(exit._tag).toBe("Failure");
 		});
 	});
 });
