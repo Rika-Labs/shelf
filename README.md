@@ -27,15 +27,20 @@ Agents read repos directly at `~/.agents/shelf/repos/{alias}/` using their nativ
 ## How It Works
 
 ```
-shelf add / install  ──▶  Git Clone + Pin/Sync  ──▶  ~/.agents/shelf/repos/
-                                                        effect/
-                                                        react/
-                                                        ...
-                                                         │
-                                                         ▼
-                                                  Agent reads directly
-                                                  (Grep, Read, Glob)
+┌──────────────┐       ┌──────────────┐       ┌──────────────────────────┐
+│  shelf add   │──────▶│  Git Clone   │──────▶│ ~/.agents/shelf/repos/   │
+│  shelffile   │       │  + Pin/Sync  │       │   effect/                │
+│  + install   │       │              │       │   react/                 │
+└──────────────┘       └──────────────┘       │   ...                    │
+                                              └────────────┬─────────────┘
+                                                           │
+                                              ┌────────────▼─────────────┐
+                                              │  Agent reads directly    │
+                                              │  Grep, Read, Glob, ls   │
+                                              └──────────────────────────┘
 ```
+
+Shelf manages the lifecycle — clone, pin, sync, remove. Your agent uses its own tools to explore the code.
 
 ## Docs
 
