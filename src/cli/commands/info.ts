@@ -54,11 +54,9 @@ export const infoCommand = Command.make("info", { alias }, (config) =>
 				refs.push(projectDir);
 			}
 		}
-		if (refs.length > 0) {
-			yield* Console.log(`Referenced:  ${refs.join(", ")}`);
-		} else {
-			yield* Console.log(`Referenced:  none (candidate for \`shelf prune\`)`);
-		}
+		yield* refs.length > 0
+			? Console.log(`Referenced:  ${refs.join(", ")}`)
+			: Console.log(`Referenced:  none (candidate for \`shelf prune\`)`);
 		// Top-level directory listing
 		const items = yield* Effect.tryPromise({
 			try: async () => {

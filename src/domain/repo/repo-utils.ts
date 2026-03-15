@@ -1,4 +1,6 @@
 import * as Effect from "effect/Effect";
+import { statSync, readdirSync } from "node:fs";
+import { join } from "node:path";
 import { RepoPin } from "../config/config-schema";
 
 export const deriveAlias = (url: string): string => {
@@ -34,26 +36,24 @@ export const parsePin = (raw: string): RepoPin => {
 	return new RepoPin({ type: "branch", value: raw });
 };
 
-export const dirSize = (path: string): Effect.Effect<number> =>
-	Effect.tryPromise({
-		try: async () => {
-			const { readdir, stat } = await import("node:fs/promises");
-			const { join } = await import("node:path");
+export const dirSize = (dirPath: string): Effect.Effect<number> =>
+	Effect.try({
+		try: () => {
 			let total = 0;
-			const walk = async (dir: string): Promise<void> => {
-				const entries = await readdir(dir, { withFileTypes: true });
+			const stack = [dirPath];
+			while (stack.length > 0) {
+				const current = stack.pop() as string;
+				const entries = readdirSync(current, { withFileTypes: true });
 				for (const entry of entries) {
-					const fullPath = join(dir, entry.name);
+					const fullPath = join(current, entry.name);
 					if (entry.isDirectory()) {
-						await walk(fullPath);
+						stack.push(fullPath);
 					} else {
-						const s = await stat(fullPath);
-						total += s.size;
+						total += statSync(fullPath).size;
 					}
 				}
-			};
-			await walk(path);
+			}
 			return total;
 		},
-		catch: () => undefined,
+		catch: () => 0,
 	}).pipe(Effect.orElseSucceed(() => 0));

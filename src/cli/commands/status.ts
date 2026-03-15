@@ -53,11 +53,9 @@ export const statusCommand = Command.make("status", {}, () =>
 			if (manualSet.has(r.alias)) refs.push("manual");
 			const projects = refMap.get(r.alias);
 			if (projects) refs.push(...projects);
-			if (refs.length > 0) {
-				yield* Console.log(`    Referenced by: ${refs.join(", ")}`);
-			} else {
-				yield* Console.log(`    ⚠ Unreferenced (candidate for \`shelf prune\`)`);
-			}
+			yield* refs.length > 0
+				? Console.log(`    Referenced by: ${refs.join(", ")}`)
+				: Console.log(`    ⚠ Unreferenced (candidate for \`shelf prune\`)`);
 		}
 	}),
 ).pipe(Command.withDescription("Show detailed status of all repos"));

@@ -31,11 +31,11 @@ export const parseShelffileLine = (line: string, lineNumber: number): ShelffileE
 			message: `Line ${lineNumber}: expected at least "alias url", got "${line.trim()}"`,
 		});
 	}
-	const alias = parts[0]!;
-	const url = parts[1]!;
+	const alias = parts[0] as string;
+	const url = parts[1] as string;
 	let pin: Option.Option<RepoPin> = Option.none();
 	if (parts.length >= 3) {
-		pin = Option.some(parseShelffilePin(parts[2]!));
+		pin = Option.some(parseShelffilePin(parts[2] as string));
 	}
 	return { alias, url, pin };
 };
@@ -44,7 +44,7 @@ export const parseShelffile = (content: string): Shelffile => {
 	const entries: ShelffileEntry[] = [];
 	const lines = content.split("\n");
 	for (let i = 0; i < lines.length; i++) {
-		const line = lines[i]!.trim();
+		const line = (lines[i] as string).trim();
 		if (line === "" || line.startsWith("#")) continue;
 		entries.push(parseShelffileLine(line, i + 1));
 	}
@@ -57,13 +57,9 @@ export const serializeShelffile = (shelffile: Shelffile): string => {
 		let line = `${entry.alias} ${entry.url}`;
 		if (Option.isSome(entry.pin)) {
 			const p = entry.pin.value;
-			if (p.type === "commit") {
-				line += ` pin:${p.value}`;
-			} else {
-				line += ` pin:${p.type}:${p.value}`;
-			}
+			line += p.type === "commit" ? ` pin:${p.value}` : ` pin:${p.type}:${p.value}`;
 		}
 		lines.push(line);
 	}
-	return lines.join("\n") + "\n";
+	return `${lines.join("\n")}\n`;
 };
