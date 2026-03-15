@@ -39,10 +39,7 @@ describe("RegistryService", () => {
 			}),
 		);
 		const shelffileLayer = createMockShelffileLayer(shelffileOverrides);
-		return RegistryService.layer.pipe(
-			Layer.provide(configLayer),
-			Layer.provide(shelffileLayer),
-		);
+		return RegistryService.layer.pipe(Layer.provide(configLayer), Layer.provide(shelffileLayer));
 	};
 
 	test("load returns default when no file", async () => {

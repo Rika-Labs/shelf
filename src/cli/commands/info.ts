@@ -46,9 +46,9 @@ export const infoCommand = Command.make("info", { alias }, (config) =>
 		const refs: string[] = [];
 		if (reg.manual.includes(entry.alias)) refs.push("manual");
 		for (const projectDir of reg.projects) {
-			const sf = yield* shelffileService.read(projectDir).pipe(
-				Effect.catch(() => Effect.succeed(null)),
-			);
+			const sf = yield* shelffileService
+				.read(projectDir)
+				.pipe(Effect.catch(() => Effect.succeed(null)));
 			if (sf === null) continue;
 			if (sf.entries.some((e) => e.alias === entry.alias)) {
 				refs.push(projectDir);

@@ -24,9 +24,9 @@ export const statusCommand = Command.make("status", {}, () =>
 		// Build a map of alias → referencing projects
 		const refMap = new Map<string, string[]>();
 		for (const projectDir of reg.projects) {
-			const sf = yield* shelffileService.read(projectDir).pipe(
-				Effect.catch(() => Effect.succeed(null)),
-			);
+			const sf = yield* shelffileService
+				.read(projectDir)
+				.pipe(Effect.catch(() => Effect.succeed(null)));
 			if (sf === null) continue;
 			for (const entry of sf.entries) {
 				const list = refMap.get(entry.alias) ?? [];

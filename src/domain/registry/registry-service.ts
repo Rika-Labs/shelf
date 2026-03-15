@@ -37,7 +37,9 @@ export class RegistryService extends ServiceMap.Service<RegistryService>()(
 				});
 			});
 
-			const save = Effect.fn("RegistryService.save")(function* (registry: typeof ShelfRegistry.Type) {
+			const save = Effect.fn("RegistryService.save")(function* (
+				registry: typeof ShelfRegistry.Type,
+			) {
 				const encoded = encodeRegistry(registry);
 				yield* Effect.tryPromise({
 					try: async () => {
@@ -110,9 +112,9 @@ export class RegistryService extends ServiceMap.Service<RegistryService>()(
 						if (!dirExists) continue;
 						validProjects.push(projectDir);
 
-						const sf = yield* shelffile.read(projectDir).pipe(
-							Effect.catch(() => Effect.succeed(null)),
-						);
+						const sf = yield* shelffile
+							.read(projectDir)
+							.pipe(Effect.catch(() => Effect.succeed(null)));
 						if (sf === null) continue;
 						for (const entry of sf.entries) {
 							aliases.add(entry.alias);

@@ -5,7 +5,9 @@ import { ShelffileParseError } from "./shelffile-errors";
 
 export const parseShelffilePin = (raw: string): RepoPin => {
 	if (!raw.startsWith("pin:")) {
-		throw new ShelffileParseError({ message: `Invalid pin format: "${raw}" (must start with "pin:")` });
+		throw new ShelffileParseError({
+			message: `Invalid pin format: "${raw}" (must start with "pin:")`,
+		});
 	}
 	const rest = raw.slice(4);
 	if (rest.startsWith("branch:")) {

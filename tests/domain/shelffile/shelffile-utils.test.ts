@@ -112,7 +112,9 @@ describe("shelffile-utils", () => {
 	describe("serializeShelffile", () => {
 		test("serializes entries without pins", () => {
 			const shelffile = {
-				entries: [{ alias: "effect", url: "https://github.com/Effect-TS/effect.git", pin: Option.none() }],
+				entries: [
+					{ alias: "effect", url: "https://github.com/Effect-TS/effect.git", pin: Option.none() },
+				],
 			};
 			const result = serializeShelffile(shelffile);
 			expect(result).toBe("effect https://github.com/Effect-TS/effect.git\n");
