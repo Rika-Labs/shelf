@@ -29,7 +29,25 @@ Use your native tools directly on the repo directories:
 | Command | Purpose |
 |---------|---------|
 | `shelf list` | Show repos with local paths |
-| `shelf update` | Sync all repos to latest |
-| `shelf update <alias>` | Sync a specific repo |
-| `shelf add <url> --alias <name>` | Add a new reference repo |
+| `shelf update [alias]` | Sync one or all repos |
+| `shelf add <url> [--alias name] [--pin ref]` | Add a new reference repo |
 | `shelf remove <alias>` | Remove a repo |
+| `shelf install [--dir path]` | Install repos from a shelffile |
+| `shelf share [--filter aliases] [--stdout]` | Generate a shelffile from current repos |
+| `shelf prune [--dry-run] [--force]` | Remove unreferenced repos |
+| `shelf status` | Show detailed status of all repos |
+| `shelf info <alias>` | Show detailed info for a single repo |
+| `shelf pin <alias> <ref>` | Pin a repo to a branch, tag, or commit |
+| `shelf alias <old> <new>` | Rename a repo alias |
+
+## Shelffile
+
+A `shelffile` is a per-project manifest declaring which reference repos the project needs. Format:
+
+```
+# one repo per line: alias url [pin:type:value]
+effect https://github.com/Effect-TS/effect.git pin:branch:main
+react https://github.com/facebook/react.git pin:tag:v19.0.0
+```
+
+Run `shelf install` in a project directory to clone all repos from its shelffile. Run `shelf share` to generate a shelffile from your current repos.

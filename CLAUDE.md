@@ -25,6 +25,8 @@ src/startup/index.ts                        — CLI entrypoint
 src/startup/layers/app.ts                   — layer composition
 ```
 
+Domains: `config`, `git`, `sync`, `repo`, `shelffile`, `registry`.
+
 Dependency direction: `command → service → storage boundary`. Reverse imports forbidden.
 
 ## Effect-TS v4 Patterns
@@ -49,4 +51,6 @@ Dependency direction: `command → service → storage boundary`. Reverse import
 ## Storage
 
 - Config: `~/.agents/shelf/config.json`
+- Registry: `~/.agents/shelf/registry.json`
 - Repos: `~/.agents/shelf/repos/{alias}/`
+- Shelffile: `./shelffile` (per-project)

@@ -2,8 +2,9 @@ import * as Effect from "effect/Effect";
 import * as Console from "effect/Console";
 import * as Option from "effect/Option";
 import { Argument, Command, Flag } from "effect/unstable/cli";
-import { RepoPin } from "../../domain/config/config-schema";
 import { RepoService } from "../../domain/repo/repo-service";
+import { RegistryService } from "../../domain/registry/registry-service";
+import { parsePin } from "../../domain/repo/repo-utils";
 
 const url = Argument.string("url");
 const alias = Flag.string("alias").pipe(Flag.optional, Flag.withDescription("Alias for the repo"));
@@ -22,22 +23,10 @@ const sparse = Flag.string("sparse").pipe(
 	Flag.withDescription("Comma-separated sparse checkout paths (e.g., 'src,packages/core')"),
 );
 
-const parsePin = (raw: string): RepoPin => {
-	if (raw.startsWith("branch:")) {
-		return new RepoPin({ type: "branch", value: raw.slice(7) });
-	}
-	if (raw.startsWith("tag:")) {
-		return new RepoPin({ type: "tag", value: raw.slice(4) });
-	}
-	if (/^[0-9a-f]{7,40}$/i.test(raw)) {
-		return new RepoPin({ type: "commit", value: raw });
-	}
-	return new RepoPin({ type: "branch", value: raw });
-};
-
 export const addCommand = Command.make("add", { url, alias, pin, depth, sparse }, (config) =>
 	Effect.gen(function* () {
 		const repo = yield* RepoService;
+		const registry = yield* RegistryService;
 		const resolvedPin =
 			Option.isSome(config.pin) && config.pin.value === "auto"
 				? yield* repo.resolveAutoPin(config.url)
@@ -52,6 +41,7 @@ export const addCommand = Command.make("add", { url, alias, pin, depth, sparse }
 			config.depth,
 			resolvedSparse,
 		);
+		yield* registry.addManual(result);
 		yield* Console.log(`Added repo "${result}"`);
 	}),
 ).pipe(Command.withDescription("Add a code reference repository to shelf"));

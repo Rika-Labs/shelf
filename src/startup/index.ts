@@ -10,6 +10,13 @@ import { listCommand } from "../cli/commands/list";
 import { updateCommand } from "../cli/commands/update";
 import { configCommand } from "../cli/commands/config";
 import { initCommand } from "../cli/commands/init";
+import { installCommand } from "../cli/commands/install";
+import { shareCommand } from "../cli/commands/share";
+import { pruneCommand } from "../cli/commands/prune";
+import { statusCommand } from "../cli/commands/status";
+import { infoCommand } from "../cli/commands/info";
+import { pinCommand } from "../cli/commands/pin";
+import { aliasCommand } from "../cli/commands/alias";
 import { AppLayer } from "./layers/app";
 import { formatUserError } from "../cli/error-handler";
 
@@ -21,6 +28,13 @@ const shelf = Command.make("shelf").pipe(
 		updateCommand,
 		configCommand,
 		initCommand,
+		installCommand,
+		shareCommand,
+		pruneCommand,
+		statusCommand,
+		infoCommand,
+		pinCommand,
+		aliasCommand,
 	]),
 	Command.withDescription("A global cache of code reference repositories for AI agents"),
 );
