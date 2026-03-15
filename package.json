@@ -1,0 +1,19 @@
+{
+	"name": "shelf",
+	"version": "0.1.0",
+	"type": "module",
+	"bin": {
+		"shelf": "./src/startup/index.ts"
+	},
+	"scripts": {
+		"shelf": "bun run src/startup/index.ts",
+		"typecheck": "tsgo --noEmit"
+	},
+	"dependencies": {
+		"@effect/platform-bun": "4.0.0-beta.31",
+		"effect": "4.0.0-beta.31"
+	},
+	"devDependencies": {
+		"@types/bun": "latest"
+	}
+}
