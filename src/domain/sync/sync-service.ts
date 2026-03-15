@@ -2,7 +2,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as ServiceMap from "effect/ServiceMap";
-import { RepoEntry } from "../config/config-schema";
+import { RepoEntry, ShelfConfig } from "../config/config-schema";
 import { ConfigService } from "../config/config-service";
 import { GitService } from "../git/git-service";
 import { isStale } from "./sync-utils";
@@ -14,7 +14,7 @@ export class SyncService extends ServiceMap.Service<SyncService>()(
 			const config = yield* ConfigService;
 			const git = yield* GitService;
 
-			const doSync = (repo: RepoEntry) =>
+			const doSync = (repo: RepoEntry): Effect.Effect<void, unknown, never> =>
 				Effect.gen(function* () {
 					const repoDir = config.repoPath(repo.alias);
 					yield* git.fetch(repoDir);
@@ -34,11 +34,9 @@ export class SyncService extends ServiceMap.Service<SyncService>()(
 					const now = new Date().toISOString();
 					const cfg = yield* config.load();
 					const updatedRepos = cfg.repos.map((r: RepoEntry) =>
-						r.alias === repo.alias
-							? new RepoEntry({ ...r, lastSyncedAt: Option.some(now) })
-							: r,
+						r.alias === repo.alias ? new RepoEntry({ ...r, lastSyncedAt: Option.some(now) }) : r,
 					);
-					yield* config.save({ ...cfg, repos: updatedRepos });
+					yield* config.save(new ShelfConfig({ ...cfg, repos: updatedRepos }));
 				});
 
 			return {

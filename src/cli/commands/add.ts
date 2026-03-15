@@ -25,14 +25,11 @@ const parsePin = (raw: string): RepoPin => {
 	return new RepoPin({ type: "branch", value: raw });
 };
 
-export const addCommand = Command.make(
-	"add",
-	{ url, alias, pin },
-	(config) =>
-		Effect.gen(function* () {
-			const repo = yield* RepoService;
-			const resolvedPin = Option.map(config.pin, parsePin);
-			const result = yield* repo.add(config.url, config.alias, resolvedPin);
-			yield* Console.log(`Added repo "${result}"`);
-		}),
+export const addCommand = Command.make("add", { url, alias, pin }, (config) =>
+	Effect.gen(function* () {
+		const repo = yield* RepoService;
+		const resolvedPin = config.pin.pipe(Option.map((raw) => parsePin(raw)));
+		const result = yield* repo.add(config.url, config.alias, resolvedPin);
+		yield* Console.log(`Added repo "${result}"`);
+	}),
 ).pipe(Command.withDescription("Add a code reference repository to shelf"));

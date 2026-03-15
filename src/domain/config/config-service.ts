@@ -3,7 +3,8 @@ import * as Layer from "effect/Layer";
 import * as ServiceMap from "effect/ServiceMap";
 import { join } from "node:path";
 import { homedir } from "node:os";
-import { ShelfConfig, defaultConfig, decodeConfig, encodeConfig } from "./config-schema";
+import type { ShelfConfig } from "./config-schema";
+import { defaultConfig, decodeConfig, encodeConfig } from "./config-schema";
 import { ConfigParseError } from "./config-errors";
 
 const SHELF_DIR = join(homedir(), ".config", "shelf");
@@ -51,8 +52,7 @@ export class ConfigService extends ServiceMap.Service<ConfigService>()(
 							await mkdir(SHELF_DIR, { recursive: true });
 							await mkdir(REPOS_DIR, { recursive: true });
 						},
-						catch: () =>
-							new ConfigParseError({ message: "Failed to create shelf directories" }),
+						catch: () => new ConfigParseError({ message: "Failed to create shelf directories" }),
 					});
 				}),
 

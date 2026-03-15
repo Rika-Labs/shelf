@@ -1,6 +1,7 @@
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
-import { ShelfConfig, defaultConfig } from "../../../src/domain/config/config-schema";
+import type { ShelfConfig } from "../../../src/domain/config/config-schema";
+import { defaultConfig } from "../../../src/domain/config/config-schema";
 import type { ConfigParseError } from "../../../src/domain/config/config-errors";
 import { ConfigService } from "../../../src/domain/config/config-service";
 

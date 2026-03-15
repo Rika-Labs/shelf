@@ -68,9 +68,7 @@ describe("runGit", () => {
 		});
 
 		test("fails for non-repo directory", async () => {
-			const result = await Effect.runPromiseExit(
-				runGit(["fetch", "--all"], tempDir),
-			);
+			const result = await Effect.runPromiseExit(runGit(["fetch", "--all"], tempDir));
 			expect(result._tag).toBe("Failure");
 		});
 	});

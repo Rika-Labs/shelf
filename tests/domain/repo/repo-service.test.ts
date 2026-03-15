@@ -117,11 +117,7 @@ describe("RepoService", () => {
 			const gitSshResult = await Effect.runPromise(
 				Effect.gen(function* () {
 					const repo = yield* RepoService;
-					return yield* repo.add(
-						"git@github.com:user/my-lib.git",
-						Option.none(),
-						Option.none(),
-					);
+					return yield* repo.add("git@github.com:user/my-lib.git", Option.none(), Option.none());
 				}).pipe(Effect.provide(layer)),
 			);
 			expect(gitSshResult).toBe("my-lib");
@@ -262,5 +258,4 @@ describe("RepoService", () => {
 			expect(syncAllCalled).toBe(true);
 		});
 	});
-
 });

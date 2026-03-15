@@ -9,4 +9,3 @@ export class RepoAlreadyExistsError extends Schema.TaggedErrorClass<RepoAlreadyE
 	"RepoAlreadyExistsError",
 	{ alias: Schema.String },
 ) {}
-

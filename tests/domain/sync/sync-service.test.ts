@@ -2,13 +2,20 @@ import { describe, test, expect } from "bun:test";
 import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
-import { RepoEntry, RepoPin } from "../../../src/domain/config/config-schema";
+import type { RepoPin } from "../../../src/domain/config/config-schema";
+import { RepoEntry } from "../../../src/domain/config/config-schema";
 import { SyncService } from "../../../src/domain/sync/sync-service";
 import { createMockConfigLayer } from "../config/helpers";
 import { createMockGitLayer } from "../git/helpers";
 import { GitOperationError } from "../../../src/domain/git/git-errors";
 
-const makeTestRepo = (overrides: Partial<{ alias: string; lastSyncedAt: Option.Option<string>; pin: Option.Option<RepoPin> }> = {}): RepoEntry =>
+const makeTestRepo = (
+	overrides: Partial<{
+		alias: string;
+		lastSyncedAt: Option.Option<string>;
+		pin: Option.Option<RepoPin>;
+	}> = {},
+): RepoEntry =>
 	new RepoEntry({
 		url: "https://github.com/test/repo.git",
 		alias: overrides.alias ?? "test-repo",
@@ -95,9 +102,7 @@ describe("SyncService", () => {
 				{},
 				{
 					fetch: () =>
-						Effect.fail(
-							new GitOperationError({ command: "git fetch", message: "network error" }),
-						),
+						Effect.fail(new GitOperationError({ command: "git fetch", message: "network error" })),
 				},
 			);
 			const repo = makeTestRepo({ lastSyncedAt: Option.none() });
@@ -114,10 +119,7 @@ describe("SyncService", () => {
 	describe("syncAll", () => {
 		test("syncs all repos in config", async () => {
 			const fetchedRepos: string[] = [];
-			const repos = [
-				makeTestRepo({ alias: "repo-a" }),
-				makeTestRepo({ alias: "repo-b" }),
-			];
+			const repos = [makeTestRepo({ alias: "repo-a" }), makeTestRepo({ alias: "repo-b" })];
 			const layer = buildSyncLayer(
 				{ load: () => Effect.succeed({ version: 1 as const, syncIntervalMinutes: 60, repos }) },
 				{

@@ -1,5 +1,5 @@
 import * as Schema from "effect/Schema";
-import * as Option from "effect/Option";
+import type * as Option from "effect/Option";
 
 const PinType = Schema.Union([
 	Schema.Literal("branch"),

@@ -5,13 +5,10 @@ import { RepoService } from "../../domain/repo/repo-service";
 
 const aliasOrUrl = Argument.string("alias-or-url");
 
-export const removeCommand = Command.make(
-	"remove",
-	{ aliasOrUrl },
-	(config) =>
-		Effect.gen(function* () {
-			const repo = yield* RepoService;
-			const removed = yield* repo.remove(config.aliasOrUrl);
-			yield* Console.log(`Removed repo "${removed}"`);
-		}),
+export const removeCommand = Command.make("remove", { aliasOrUrl }, (config) =>
+	Effect.gen(function* () {
+		const repo = yield* RepoService;
+		const removed = yield* repo.remove(config.aliasOrUrl);
+		yield* Console.log(`Removed repo "${removed}"`);
+	}),
 ).pipe(Command.withDescription("Remove a repository from shelf"));

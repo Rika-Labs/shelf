@@ -2,7 +2,7 @@ import * as Effect from "effect/Effect";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as ServiceMap from "effect/ServiceMap";
-import { RepoEntry, type RepoPin } from "../config/config-schema";
+import { RepoEntry, ShelfConfig, type RepoPin } from "../config/config-schema";
 import { ConfigService } from "../config/config-service";
 import { GitService } from "../git/git-service";
 import { SyncService } from "../sync/sync-service";
@@ -26,9 +26,7 @@ export class RepoService extends ServiceMap.Service<RepoService>()(
 					yield* config.ensureDirectories();
 					const resolvedAlias = Option.getOrElse(alias, () => deriveAlias(url));
 					const cfg = yield* config.load();
-					const existing = cfg.repos.find(
-						(r: RepoEntry) => r.alias === resolvedAlias,
-					);
+					const existing = cfg.repos.find((r: RepoEntry) => r.alias === resolvedAlias);
 					if (existing) {
 						return yield* new RepoAlreadyExistsError({ alias: resolvedAlias });
 					}
@@ -42,10 +40,7 @@ export class RepoService extends ServiceMap.Service<RepoService>()(
 						addedAt: now,
 						lastSyncedAt: Option.some(now),
 					});
-					yield* config.save({
-						...cfg,
-						repos: [...cfg.repos, newRepo],
-					});
+					yield* config.save(new ShelfConfig({ ...cfg, repos: [...cfg.repos, newRepo] }));
 					return resolvedAlias;
 				}),
 
@@ -65,10 +60,12 @@ export class RepoService extends ServiceMap.Service<RepoService>()(
 						},
 						catch: () => undefined,
 					}).pipe(Effect.ignore);
-					yield* config.save({
-						...cfg,
-						repos: cfg.repos.filter((r: RepoEntry) => r.alias !== repo.alias),
-					});
+					yield* config.save(
+						new ShelfConfig({
+							...cfg,
+							repos: cfg.repos.filter((r: RepoEntry) => r.alias !== repo.alias),
+						}),
+					);
 					return repo.alias;
 				}),
 
@@ -77,14 +74,10 @@ export class RepoService extends ServiceMap.Service<RepoService>()(
 					return cfg.repos;
 				}),
 
-				update: Effect.fn("RepoService.update")(function* (
-					alias: Option.Option<string>,
-				) {
+				update: Effect.fn("RepoService.update")(function* (alias: Option.Option<string>) {
 					if (Option.isSome(alias)) {
 						const cfg = yield* config.load();
-						const repo = cfg.repos.find(
-							(r: RepoEntry) => r.alias === alias.value,
-						);
+						const repo = cfg.repos.find((r: RepoEntry) => r.alias === alias.value);
 						if (!repo) {
 							return yield* new RepoNotFoundError({ alias: alias.value });
 						}

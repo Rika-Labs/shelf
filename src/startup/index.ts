@@ -11,6 +11,7 @@ import { updateCommand } from "../cli/commands/update";
 import { configCommand } from "../cli/commands/config";
 import { initCommand } from "../cli/commands/init";
 import { AppLayer } from "./layers/app";
+import { formatUserError } from "../cli/error-handler";
 
 const shelf = Command.make("shelf").pipe(
 	Command.withSubcommands([
@@ -28,5 +29,13 @@ const program = Command.run(shelf, { version: "0.1.0" });
 
 program.pipe(
 	Effect.provide(Layer.mergeAll(AppLayer, BunServicesLayer)),
+	Effect.catch((error: unknown) => {
+		const message = formatUserError(error);
+		if (message !== null) {
+			console.error(message); // eslint-disable-line no-console
+			return Effect.void;
+		}
+		return Effect.fail(error);
+	}),
 	runMain,
 );

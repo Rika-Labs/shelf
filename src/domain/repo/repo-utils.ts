@@ -14,6 +14,6 @@ export const deriveAlias = (url: string): string => {
 	}
 	// Take the last path segment
 	const segments = cleaned.split("/").filter((s) => s.length > 0);
-	const last = segments[segments.length - 1];
+	const last = segments.at(-1);
 	return last ?? "unknown";
 };
