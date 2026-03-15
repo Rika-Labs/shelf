@@ -1,13 +1,23 @@
 {
-	"name": "shelf",
+	"name": "@rikalabs/shelf",
 	"version": "0.1.0",
 	"type": "module",
+	"description": "A global cache of code reference repositories for AI agents",
+	"license": "MIT",
+	"repository": {
+		"type": "git",
+		"url": "https://github.com/Rika-Labs/shelf.git"
+	},
 	"bin": {
 		"shelf": "./src/startup/index.ts"
 	},
+	"files": [
+		"src/**/*.ts"
+	],
 	"scripts": {
 		"shelf": "bun run src/startup/index.ts",
-		"typecheck": "tsgo --noEmit"
+		"typecheck": "tsgo --noEmit",
+		"test": "bun test"
 	},
 	"dependencies": {
 		"@effect/platform-bun": "4.0.0-beta.31",

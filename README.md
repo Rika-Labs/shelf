@@ -5,10 +5,15 @@
 
 </div>
 
+## Install
+
+```bash
+bun install -g @rikalabs/shelf
+```
+
 ## Quick Start
 
 ```bash
-bun install -g
 shelf add https://github.com/Effect-TS/effect.git
 shelf list
 ```
