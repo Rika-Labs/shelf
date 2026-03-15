@@ -1,7 +1,7 @@
 <div align="center">
 
   <h1>shelf</h1>
-  <p><em>A global cache of code reference repositories for AI agents</em></p>
+  <p><em>A global cache of code reference repositories for agents</em></p>
 
 </div>
 
