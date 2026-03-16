@@ -14,6 +14,13 @@ bun install -g @rikalabs/shelf
 ## Quick Start
 
 ```bash
+# Setup agent
+shelf init
+
+# Or
+shelf init --agent gemini
+shelf init --agent claude
+
 # Add a repo
 shelf add https://github.com/Effect-TS/effect.git
 shelf list
