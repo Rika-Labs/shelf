@@ -1,0 +1,52 @@
+import { PackageDependency } from "./detect-schema";
+
+export const parsePackageJson = (content: string): ReadonlyArray<PackageDependency> => {
+	try {
+		const pkg = JSON.parse(content) as Record<string, unknown>;
+		const deps = (pkg["dependencies"] ?? {}) as Record<string, string>;
+		const devDeps = (pkg["devDependencies"] ?? {}) as Record<string, string>;
+		const all = { ...deps, ...devDeps };
+		return Object.entries(all).map(
+			([name, version]) => new PackageDependency({ name, version, source: "npm" }),
+		);
+	} catch {
+		return [];
+	}
+};
+
+export const parseGoMod = (content: string): ReadonlyArray<PackageDependency> => {
+	const deps: PackageDependency[] = [];
+	const lines = content.split("\n");
+	let inRequireBlock = false;
+
+	for (const line of lines) {
+		const trimmed = line.trim();
+
+		if (trimmed === "require (") {
+			inRequireBlock = true;
+			continue;
+		}
+		if (trimmed === ")" && inRequireBlock) {
+			inRequireBlock = false;
+			continue;
+		}
+
+		if (inRequireBlock) {
+			const match = trimmed.match(/^(\S+)\s+(\S+)/);
+			const name = match?.at(1);
+			const version = match?.at(2);
+			if (name && version) {
+				deps.push(new PackageDependency({ name, version, source: "go" }));
+			}
+		}
+
+		const singleMatch = trimmed.match(/^require\s+(\S+)\s+(\S+)/);
+		const singleName = singleMatch?.at(1);
+		const singleVersion = singleMatch?.at(2);
+		if (singleName && singleVersion) {
+			deps.push(new PackageDependency({ name: singleName, version: singleVersion, source: "go" }));
+		}
+	}
+
+	return deps;
+};
