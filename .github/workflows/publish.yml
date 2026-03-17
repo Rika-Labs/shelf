@@ -1,22 +1,57 @@
 name: Publish
 
 on:
-  release:
-    types: [published]
+  push:
+    branches: [main]
 
 jobs:
   publish:
     runs-on: ubuntu-latest
     permissions:
-      contents: read
+      contents: write
     steps:
       - uses: actions/checkout@v4
+        with:
+          fetch-depth: 2
+
+      - name: Check version change
+        id: version
+        run: |
+          OLD_VERSION=$(git show ${{ github.event.before }}:package.json | jq -r '.version' 2>/dev/null || echo "")
+          NEW_VERSION=$(jq -r '.version' package.json)
+          echo "old=$OLD_VERSION" >> "$GITHUB_OUTPUT"
+          echo "new=$NEW_VERSION" >> "$GITHUB_OUTPUT"
+          if [ "$OLD_VERSION" != "$NEW_VERSION" ] && [ -n "$OLD_VERSION" ]; then
+            echo "changed=true" >> "$GITHUB_OUTPUT"
+          else
+            echo "changed=false" >> "$GITHUB_OUTPUT"
+          fi
+
       - uses: oven-sh/setup-bun@v2
+        if: steps.version.outputs.changed == 'true'
+
       - run: bun install --frozen-lockfile
-      - run: bun test
+        if: steps.version.outputs.changed == 'true'
+
       - run: bunx --bun tsc --noEmit
-      - run: |
-          echo "//registry.npmjs.org/:_authToken=\${NPM_TOKEN}" > .npmrc
+        if: steps.version.outputs.changed == 'true'
+
+      - run: bun test
+        if: steps.version.outputs.changed == 'true'
+
+      - name: Publish to npm
+        if: steps.version.outputs.changed == 'true'
+        run: |
+          echo "//registry.npmjs.org/:_authToken=${NPM_TOKEN}" > .npmrc
           npm publish --access public
         env:
           NPM_TOKEN: ${{ secrets.NPM_TOKEN }}
+
+      - name: Create GitHub release
+        if: steps.version.outputs.changed == 'true'
+        run: |
+          gh release create "v${{ steps.version.outputs.new }}" \
+            --title "v${{ steps.version.outputs.new }}" \
+            --generate-notes
+        env:
+          GH_TOKEN: ${{ github.token }}
