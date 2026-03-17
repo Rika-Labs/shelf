@@ -15,8 +15,8 @@ const startCommand = Command.make("start", { foreground: startForeground }, (con
 		if (config.foreground) {
 			yield* Console.log("Running daemon in foreground (Ctrl+C to stop)...");
 			const { daemonProgram } = yield* Effect.tryPromise({
-				try: () => import("../../domain/daemon/daemon-loop"),
-				catch: (e) => new Error(`Failed to load daemon loop: ${e}`),
+				try: () => import("../../domain/daemon/daemon-service"),
+				catch: (e) => new Error(`Failed to load daemon program: ${e}`),
 			});
 			yield* daemonProgram;
 		} else {

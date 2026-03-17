@@ -1,8 +1,10 @@
 import * as Effect from "effect/Effect";
+import * as Duration from "effect/Duration";
 import * as Layer from "effect/Layer";
 import * as Option from "effect/Option";
 import * as ServiceMap from "effect/ServiceMap";
 import { ConfigService } from "../config/config-service";
+import { SyncService } from "../sync/sync-service";
 import { DaemonState, encodeDaemonState, decodeDaemonState } from "./daemon-schema";
 import {
 	DaemonAlreadyRunningError,
@@ -69,12 +71,9 @@ export class DaemonService extends ServiceMap.Service<DaemonService>()(
 					yield* Effect.tryPromise({
 						try: async () => {
 							const logFile = Bun.file(logPath);
-							if (await logFile.exists()) {
-								const stat = await logFile.arrayBuffer();
-								if (stat.byteLength > LOG_MAX_BYTES) {
-									const { rename } = await import("node:fs/promises");
-									await rename(logPath, `${logPath}.1`);
-								}
+							if ((await logFile.exists()) && logFile.size > LOG_MAX_BYTES) {
+								const { rename } = await import("node:fs/promises");
+								await rename(logPath, `${logPath}.1`);
 							}
 						},
 						catch: () => undefined,
@@ -95,13 +94,13 @@ export class DaemonService extends ServiceMap.Service<DaemonService>()(
 							new DaemonStartError({ message: `Failed to spawn daemon process: ${err}` }),
 					});
 
-					const state = new DaemonState({
+					const daemonState = new DaemonState({
 						pid: child.pid,
 						startedAt: new Date().toISOString(),
 						lastTickAt: Option.none(),
 						version: SHELF_VERSION,
 					});
-					yield* writeState(state);
+					yield* writeState(daemonState);
 					return child.pid;
 				}),
 
@@ -170,3 +169,90 @@ export class DaemonService extends ServiceMap.Service<DaemonService>()(
 ) {
 	static layer = Layer.effect(this, this.make);
 }
+
+// --- Daemon loop program (runs in subprocess) ---
+
+const appendLog = (message: string): void => {
+	const timestamp = new Date().toISOString();
+	// eslint-disable-next-line no-console -- daemon logs to stdout which is redirected to log file
+	console.log(`[${timestamp}] ${message}`);
+};
+
+const writeDaemonState = (
+	path: string,
+	startedAt: string,
+	lastTickAt: Option.Option<string>,
+): Effect.Effect<void> =>
+	Effect.tryPromise({
+		try: async () => {
+			const state = new DaemonState({
+				pid: process.pid,
+				startedAt,
+				lastTickAt,
+				version: SHELF_VERSION,
+			});
+			const encoded = encodeDaemonState(state);
+			const tmpPath = `${path}.tmp`;
+			await Bun.write(tmpPath, JSON.stringify(encoded, null, "\t"));
+			const { rename } = await import("node:fs/promises");
+			await rename(tmpPath, path);
+		},
+		catch: () => undefined,
+	}).pipe(Effect.catch(() => Effect.void));
+
+const cleanupState = (path: string): Effect.Effect<void> =>
+	Effect.tryPromise({
+		try: async () => {
+			const { rm } = await import("node:fs/promises");
+			await rm(path, { force: true });
+		},
+		catch: () => undefined,
+	}).pipe(Effect.catch(() => Effect.void));
+
+export const daemonProgram = Effect.gen(function* () {
+	const cfg = yield* ConfigService;
+	const sync = yield* SyncService;
+	const path = daemonStatePath(cfg.configDir);
+
+	const state = { running: true };
+
+	process.on("SIGTERM", () => {
+		state.running = false;
+		appendLog("Received SIGTERM, shutting down...");
+	});
+	process.on("SIGINT", () => {
+		state.running = false;
+		appendLog("Received SIGINT, shutting down...");
+	});
+
+	const startedAt = new Date().toISOString();
+	appendLog("Daemon started");
+	yield* writeDaemonState(path, startedAt, Option.none());
+
+	while (state.running) {
+		const config = yield* cfg.load().pipe(Effect.catch(() => Effect.succeed(null)));
+		if (!config) {
+			appendLog("Failed to load config, retrying in 60s");
+			yield* Effect.sleep(Duration.minutes(1));
+			continue;
+		}
+
+		const intervalMinutes = config.syncIntervalMinutes;
+		appendLog(`Starting sync cycle (interval: ${intervalMinutes}m)`);
+
+		yield* sync.syncAll().pipe(
+			Effect.catch((error: unknown) => {
+				appendLog(`Sync cycle failed: ${error}`);
+				return Effect.void;
+			}),
+		);
+
+		appendLog("Sync cycle complete");
+		yield* writeDaemonState(path, startedAt, Option.some(new Date().toISOString()));
+
+		yield* Effect.sleep(Duration.minutes(intervalMinutes));
+	}
+
+	yield* cleanupState(path);
+	appendLog("Daemon stopped");
+});

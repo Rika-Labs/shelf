@@ -214,7 +214,7 @@ describe("ResolveService", () => {
 
 	describe("registry coverage", () => {
 		test("all registry entries are valid git URLs", async () => {
-			const { builtinRegistry } = await import("../../../src/domain/resolve/resolve-registry");
+			const { builtinRegistry } = await import("../../../src/domain/resolve/resolve-utils");
 			for (const [name, url] of Object.entries(builtinRegistry)) {
 				expect(url).toMatch(/^https:\/\//);
 				expect(url).toMatch(/\.git$/);
@@ -223,7 +223,7 @@ describe("ResolveService", () => {
 		});
 
 		test("registry has at least 50 entries", async () => {
-			const { builtinRegistry } = await import("../../../src/domain/resolve/resolve-registry");
+			const { builtinRegistry } = await import("../../../src/domain/resolve/resolve-utils");
 			expect(Object.keys(builtinRegistry).length).toBeGreaterThanOrEqual(50);
 		});
 	});

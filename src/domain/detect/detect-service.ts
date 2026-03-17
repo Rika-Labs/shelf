@@ -4,10 +4,9 @@ import * as Option from "effect/Option";
 import * as ServiceMap from "effect/ServiceMap";
 import { join } from "node:path";
 import { ConfigService } from "../config/config-service";
-import { builtinRegistry } from "../resolve/resolve-registry";
+import { builtinRegistry } from "../resolve/resolve-utils";
 import { DetectedRepo } from "./detect-schema";
-import { parsePackageJson, parseGoMod } from "./detect-utils";
-import { resolveNpmPackage, resolveGoModule } from "./detect-resolvers";
+import { parsePackageJson, parseGoMod, resolveNpmPackage, resolveGoModule } from "./detect-utils";
 
 const readFileOrNone = (path: string): Effect.Effect<Option.Option<string>> =>
 	Effect.tryPromise({

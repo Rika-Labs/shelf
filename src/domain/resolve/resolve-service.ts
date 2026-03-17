@@ -8,8 +8,8 @@ import {
 	expandOwnerRepo,
 	expandPrefixed,
 	deriveAliasFromOwnerRepo,
+	builtinRegistry,
 } from "./resolve-utils";
-import { builtinRegistry } from "./resolve-registry";
 import { deriveAlias } from "../repo/repo-utils";
 
 const resolveViaGitHubApi = Effect.fn("resolveViaGitHubApi")(function* (name: string) {

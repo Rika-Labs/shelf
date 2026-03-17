@@ -1,7 +1,7 @@
 import { describe, expect, test } from "bun:test";
 import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
-import { resolveGoModule, resolveNpmPackage } from "../../../src/domain/detect/detect-resolvers";
+import { resolveGoModule, resolveNpmPackage } from "../../../src/domain/detect/detect-utils";
 
 describe("resolveGoModule", () => {
 	test("resolves github.com modules to git URLs", () => {
