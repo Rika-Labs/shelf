@@ -51,6 +51,7 @@ describe("DaemonService", () => {
 		test("returns not running when PID is dead (stale state)", async () => {
 			const state = new DaemonState({
 				pid: 999_999_999,
+				token: "deadbeef".repeat(4),
 				startedAt: new Date().toISOString(),
 				lastTickAt: Option.none(),
 				version: "0.1.1",
@@ -74,6 +75,7 @@ describe("DaemonService", () => {
 			// Use current process PID as a known-alive PID
 			const state = new DaemonState({
 				pid: process.pid,
+				token: "testtoken1234567".repeat(2),
 				startedAt: new Date(Date.now() - 60_000).toISOString(),
 				lastTickAt: Option.some(new Date().toISOString()),
 				version: "0.1.1",
@@ -111,6 +113,7 @@ describe("DaemonService", () => {
 		test("fails with DaemonNotRunningError when PID is dead", async () => {
 			const state = new DaemonState({
 				pid: 999_999_999,
+				token: "deadbeef".repeat(4),
 				startedAt: new Date().toISOString(),
 				lastTickAt: Option.none(),
 				version: "0.1.1",
@@ -133,6 +136,7 @@ describe("DaemonService", () => {
 			// Write a state file with current PID (which is alive)
 			const state = new DaemonState({
 				pid: process.pid,
+				token: "testtoken1234567".repeat(2),
 				startedAt: new Date().toISOString(),
 				lastTickAt: Option.none(),
 				version: "0.1.1",
@@ -156,6 +160,7 @@ describe("DaemonService", () => {
 			// Write state with dead PID
 			const state = new DaemonState({
 				pid: 999_999_999,
+				token: "deadbeef".repeat(4),
 				startedAt: new Date().toISOString(),
 				lastTickAt: Option.none(),
 				version: "0.1.1",

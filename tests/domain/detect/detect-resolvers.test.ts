@@ -1,7 +1,6 @@
 import { describe, expect, test } from "bun:test";
-import * as Effect from "effect/Effect";
 import * as Option from "effect/Option";
-import { resolveGoModule, resolveNpmPackage } from "../../../src/domain/detect/detect-utils";
+import { resolveGoModule, normalizeGitUrl } from "../../../src/domain/detect/detect-utils";
 
 describe("resolveGoModule", () => {
 	test("resolves github.com modules to git URLs", () => {
@@ -44,40 +43,34 @@ describe("resolveGoModule", () => {
 	});
 });
 
-describe("resolveNpmPackage", () => {
-	test("resolves a well-known package with repository field", async () => {
-		const result = await Effect.runPromise(resolveNpmPackage("express"));
-		expect(Option.isSome(result)).toBe(true);
-		if (Option.isSome(result)) {
-			expect(result.value).toContain("github.com");
-			expect(result.value).toContain("express");
-			expect(result.value).toMatch(/\.git$/);
-		}
-	});
-
-	test("resolves package with git+ prefix in repository URL", async () => {
-		// zod is known to have a standard repository URL
-		const result = await Effect.runPromise(resolveNpmPackage("zod"));
-		expect(Option.isSome(result)).toBe(true);
-		if (Option.isSome(result)) {
-			expect(result.value).toContain("github.com");
-			expect(result.value).toMatch(/^https:\/\//);
-			expect(result.value).toMatch(/\.git$/);
-		}
-	});
-
-	test("returns none for non-existent package", async () => {
-		const result = await Effect.runPromise(
-			resolveNpmPackage("xyzzy-this-package-does-not-exist-12345"),
+describe("normalizeGitUrl", () => {
+	test("strips git+ prefix", () => {
+		expect(normalizeGitUrl("git+https://github.com/org/repo")).toBe(
+			"https://github.com/org/repo.git",
 		);
-		expect(Option.isNone(result)).toBe(true);
 	});
 
-	test("returns none for package without repository field", async () => {
-		// Some packages don't have a repository field; we test the code path
-		// by checking it doesn't crash and returns Option
-		const result = await Effect.runPromise(resolveNpmPackage("some-unknown-pkg-no-repo-9999"));
-		// Should be Option.none since the package doesn't exist
-		expect(Option.isNone(result)).toBe(true);
+	test("converts git:// to https://", () => {
+		expect(normalizeGitUrl("git://github.com/org/repo")).toBe("https://github.com/org/repo.git");
+	});
+
+	test("converts ssh://git@ to https://", () => {
+		expect(normalizeGitUrl("ssh://git@github.com/org/repo")).toBe(
+			"https://github.com/org/repo.git",
+		);
+	});
+
+	test("expands github: shorthand", () => {
+		expect(normalizeGitUrl("github:org/repo")).toBe("https://github.com/org/repo.git");
+	});
+
+	test("appends .git if missing", () => {
+		expect(normalizeGitUrl("https://github.com/org/repo")).toBe("https://github.com/org/repo.git");
+	});
+
+	test("preserves .git if already present", () => {
+		expect(normalizeGitUrl("https://github.com/org/repo.git")).toBe(
+			"https://github.com/org/repo.git",
+		);
 	});
 });

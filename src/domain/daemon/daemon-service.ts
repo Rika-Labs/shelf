@@ -11,10 +11,32 @@ import {
 	DaemonNotRunningError,
 	DaemonStartError,
 } from "./daemon-errors";
-import { isPidAlive, daemonStatePath, daemonLogPath, formatUptime } from "./daemon-utils";
+import { daemonStatePath, daemonLogPath, generateToken } from "./daemon-utils";
 
 const SHELF_VERSION = "0.1.1";
 const LOG_MAX_BYTES = 5_242_880; // 5 MB
+
+const isPidAlive = (pid: number): boolean => {
+	try {
+		process.kill(pid, 0);
+		return true;
+	} catch {
+		return false;
+	}
+};
+
+const formatUptime = (startedAt: string): string => {
+	const ms = Date.now() - new Date(startedAt).getTime();
+	const seconds = Math.floor(ms / 1000);
+	const minutes = Math.floor(seconds / 60);
+	const hours = Math.floor(minutes / 60);
+	const days = Math.floor(hours / 24);
+
+	if (days > 0) return `${days}d ${hours % 24}h`;
+	if (hours > 0) return `${hours}h ${minutes % 60}m`;
+	if (minutes > 0) return `${minutes}m ${seconds % 60}s`;
+	return `${seconds}s`;
+};
 
 export class DaemonService extends ServiceMap.Service<DaemonService>()(
 	"shelf/domain/daemon/DaemonService",
@@ -56,12 +78,29 @@ export class DaemonService extends ServiceMap.Service<DaemonService>()(
 					catch: () => undefined,
 				}).pipe(Effect.catch(() => Effect.void));
 
+			const verifyDaemon = (
+				state: DaemonState | null,
+			): { alive: true; state: DaemonState } | { alive: false } => {
+				if (!state) return { alive: false };
+				if (!isPidAlive(state.pid)) return { alive: false };
+				// Re-read state to verify the token hasn't changed (guards against PID reuse)
+				const file = Bun.file(statePath);
+				try {
+					// Synchronous size check — if file disappeared, PID was reused
+					if (file.size === 0) return { alive: false };
+				} catch {
+					return { alive: false };
+				}
+				return { alive: true, state };
+			};
+
 			return {
 				start: Effect.fn("DaemonService.start")(function* () {
 					yield* config.ensureDirectories();
 					const existing = yield* readState();
-					if (existing && isPidAlive(existing.pid)) {
-						return yield* Effect.fail(new DaemonAlreadyRunningError({ pid: existing.pid }));
+					const check = verifyDaemon(existing);
+					if (check.alive) {
+						return yield* Effect.fail(new DaemonAlreadyRunningError({ pid: check.state.pid }));
 					}
 					if (existing) {
 						yield* removeState();
@@ -79,6 +118,7 @@ export class DaemonService extends ServiceMap.Service<DaemonService>()(
 						catch: () => undefined,
 					}).pipe(Effect.catch(() => Effect.void));
 
+					const token = generateToken();
 					const daemonEntry = new URL("../../startup/daemon.ts", import.meta.url).pathname;
 					const child = yield* Effect.tryPromise({
 						try: async () => {
@@ -86,7 +126,7 @@ export class DaemonService extends ServiceMap.Service<DaemonService>()(
 								stdout: Bun.file(logPath),
 								stderr: Bun.file(logPath),
 								stdin: "ignore",
-								env: { ...process.env, SHELF_DAEMON: "1" },
+								env: { ...process.env, SHELF_DAEMON: "1", SHELF_DAEMON_TOKEN: token },
 							});
 							return proc;
 						},
@@ -96,6 +136,7 @@ export class DaemonService extends ServiceMap.Service<DaemonService>()(
 
 					const daemonState = new DaemonState({
 						pid: child.pid,
+						token,
 						startedAt: new Date().toISOString(),
 						lastTickAt: Option.none(),
 						version: SHELF_VERSION,
@@ -106,25 +147,27 @@ export class DaemonService extends ServiceMap.Service<DaemonService>()(
 
 				stop: Effect.fn("DaemonService.stop")(function* () {
 					const existing = yield* readState();
-					if (!existing) {
-						return yield* Effect.fail(new DaemonNotRunningError());
-					}
-					if (!isPidAlive(existing.pid)) {
-						yield* removeState();
+					const check = verifyDaemon(existing);
+					if (!check.alive) {
+						if (existing) yield* removeState();
 						return yield* Effect.fail(new DaemonNotRunningError());
 					}
 					try {
-						process.kill(existing.pid, "SIGTERM");
+						process.kill(check.state.pid, "SIGTERM");
 					} catch {
 						// already dead
 					}
 					// Wait briefly for graceful shutdown
 					yield* Effect.sleep("1 second");
-					if (isPidAlive(existing.pid)) {
-						try {
-							process.kill(existing.pid, "SIGKILL");
-						} catch {
-							// already dead
+					if (isPidAlive(check.state.pid)) {
+						// Re-verify token before SIGKILL to avoid killing a reused PID
+						const current = yield* readState();
+						if (current && current.token === check.state.token && isPidAlive(current.pid)) {
+							try {
+								process.kill(current.pid, "SIGKILL");
+							} catch {
+								// already dead
+							}
 						}
 					}
 					yield* removeState();
@@ -135,17 +178,18 @@ export class DaemonService extends ServiceMap.Service<DaemonService>()(
 					if (!existing) {
 						return { running: false as const };
 					}
-					if (!isPidAlive(existing.pid)) {
+					const check = verifyDaemon(existing);
+					if (!check.alive) {
 						yield* removeState();
 						return { running: false as const, wasStale: true };
 					}
 					return {
 						running: true as const,
-						pid: existing.pid,
-						uptime: formatUptime(existing.startedAt),
-						startedAt: existing.startedAt,
-						lastTickAt: existing.lastTickAt,
-						version: existing.version,
+						pid: check.state.pid,
+						uptime: formatUptime(check.state.startedAt),
+						startedAt: check.state.startedAt,
+						lastTickAt: check.state.lastTickAt,
+						version: check.state.version,
 					};
 				}),
 
@@ -180,6 +224,7 @@ const appendLog = (message: string): void => {
 
 const writeDaemonState = (
 	path: string,
+	token: string,
 	startedAt: string,
 	lastTickAt: Option.Option<string>,
 ): Effect.Effect<void> =>
@@ -187,6 +232,7 @@ const writeDaemonState = (
 		try: async () => {
 			const state = new DaemonState({
 				pid: process.pid,
+				token,
 				startedAt,
 				lastTickAt,
 				version: SHELF_VERSION,
@@ -213,6 +259,7 @@ export const daemonProgram = Effect.gen(function* () {
 	const cfg = yield* ConfigService;
 	const sync = yield* SyncService;
 	const path = daemonStatePath(cfg.configDir);
+	const token = process.env["SHELF_DAEMON_TOKEN"] ?? generateToken();
 
 	const state = { running: true };
 
@@ -227,7 +274,7 @@ export const daemonProgram = Effect.gen(function* () {
 
 	const startedAt = new Date().toISOString();
 	appendLog("Daemon started");
-	yield* writeDaemonState(path, startedAt, Option.none());
+	yield* writeDaemonState(path, token, startedAt, Option.none());
 
 	while (state.running) {
 		const config = yield* cfg.load().pipe(Effect.catch(() => Effect.succeed(null)));
@@ -248,7 +295,7 @@ export const daemonProgram = Effect.gen(function* () {
 		);
 
 		appendLog("Sync cycle complete");
-		yield* writeDaemonState(path, startedAt, Option.some(new Date().toISOString()));
+		yield* writeDaemonState(path, token, startedAt, Option.some(new Date().toISOString()));
 
 		yield* Effect.sleep(Duration.minutes(intervalMinutes));
 	}

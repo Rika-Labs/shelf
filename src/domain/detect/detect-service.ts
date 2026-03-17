@@ -6,7 +6,7 @@ import { join } from "node:path";
 import { ConfigService } from "../config/config-service";
 import { builtinRegistry } from "../resolve/resolve-utils";
 import { DetectedRepo } from "./detect-schema";
-import { parsePackageJson, parseGoMod, resolveNpmPackage, resolveGoModule } from "./detect-utils";
+import { parsePackageJson, parseGoMod, normalizeGitUrl, resolveGoModule } from "./detect-utils";
 
 const readFileOrNone = (path: string): Effect.Effect<Option.Option<string>> =>
 	Effect.tryPromise({
@@ -18,6 +18,34 @@ const readFileOrNone = (path: string): Effect.Effect<Option.Option<string>> =>
 		},
 		catch: () => Option.none<string>(),
 	}).pipe(Effect.catch(() => Effect.succeed(Option.none<string>())));
+
+const resolveNpmPackage = (name: string): Effect.Effect<Option.Option<string>> =>
+	Effect.gen(function* () {
+		const response = yield* Effect.tryPromise({
+			try: () => fetch(`https://registry.npmjs.org/${encodeURIComponent(name)}`),
+			catch: () => "fetch-failed" as const,
+		}).pipe(Effect.catch(() => Effect.succeed(null)));
+
+		if (!response || !response.ok) return Option.none();
+
+		const data = yield* Effect.tryPromise({
+			try: () =>
+				response.json() as Promise<{
+					repository?: { type?: string; url?: string } | string;
+				}>,
+			catch: () => "parse-failed" as const,
+		}).pipe(Effect.catch(() => Effect.succeed(null)));
+
+		if (!data) return Option.none();
+
+		const repoField = data.repository;
+		if (!repoField) return Option.none();
+
+		const repoUrl = typeof repoField === "string" ? repoField : repoField.url;
+		if (!repoUrl) return Option.none();
+
+		return Option.some(normalizeGitUrl(repoUrl));
+	});
 
 export class DetectService extends ServiceMap.Service<DetectService>()(
 	"shelf/domain/detect/DetectService",
