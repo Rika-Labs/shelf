@@ -16,14 +16,22 @@ export class GitService extends ServiceMap.Service<GitService>()("shelf/domain/g
 				sparse: Option.Option<ReadonlyArray<string>>,
 			) {
 				const args = ["clone"];
+				const isCommitPin = Option.isSome(pin) && pin.value.type === "commit";
+				// Default to depth 1 — repos are for code reference, not history
+				// Skip shallow clone for commit pins since the target commit may not be the tip
 				if (Option.isSome(depth)) {
 					args.push("--depth", String(depth.value));
+				} else if (!isCommitPin) {
+					args.push("--depth", "1");
 				}
 				if (Option.isSome(pin)) {
 					const pinType = pin.value.type;
 					if (pinType === "branch" || pinType === "tag") {
 						args.push("--branch", pin.value.value);
 					}
+				}
+				if (!isCommitPin) {
+					args.push("--single-branch");
 				}
 				if (Option.isSome(sparse)) {
 					args.push("--no-checkout");
@@ -45,8 +53,11 @@ export class GitService extends ServiceMap.Service<GitService>()("shelf/domain/g
 				depth: Option.Option<number>,
 			) {
 				const args = ["fetch", "--all", "--prune"];
+				// Default to depth 1 on fetch — keep repo lightweight
 				if (Option.isSome(depth)) {
 					args.push("--depth", String(depth.value));
+				} else {
+					args.push("--depth", "1");
 				}
 				yield* runGit(args, repoDir);
 			}),

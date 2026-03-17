@@ -10,6 +10,11 @@ const errorMessages: Record<string, (error: Record<string, unknown>) => string> 
 		`No shelffile found at ${String(e["path"])}. Create one or use \`shelf share\` to generate one.`,
 	ShelffileParseError: (e) => `Shelffile error: ${String(e["message"])}`,
 	RegistryParseError: (e) => `Registry error: ${String(e["message"])}`,
+	ResolveError: (e) => `Could not resolve "${String(e["input"])}": ${String(e["message"])}`,
+	DetectError: (e) => `Detection failed: ${String(e["message"])}`,
+	DaemonAlreadyRunningError: (e) => `Daemon is already running (PID: ${String(e["pid"])}).`,
+	DaemonNotRunningError: () => `No daemon is currently running.`,
+	DaemonStartError: (e) => `Failed to start daemon: ${String(e["message"])}`,
 };
 
 export const formatUserError = (error: unknown): string | null => {

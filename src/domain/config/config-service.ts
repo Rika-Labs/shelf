@@ -39,7 +39,10 @@ export class ConfigService extends ServiceMap.Service<ConfigService>()(
 					const encoded = encodeConfig(config);
 					yield* Effect.tryPromise({
 						try: async () => {
-							await Bun.write(CONFIG_PATH, JSON.stringify(encoded, null, "\t"));
+							const tmpPath = `${CONFIG_PATH}.tmp`;
+							await Bun.write(tmpPath, JSON.stringify(encoded, null, "\t"));
+							const { rename } = await import("node:fs/promises");
+							await rename(tmpPath, CONFIG_PATH);
 						},
 						catch: () => new ConfigParseError({ message: "Failed to write config file" }),
 					});

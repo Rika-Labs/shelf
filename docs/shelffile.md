@@ -22,12 +22,23 @@ my-lib https://github.com/org/lib.git
 ## Usage
 
 ```bash
-shelf install              # clone all repos from ./shelffile
-shelf install --dir /path  # clone from a shelffile in another directory
-shelf share                # generate a shelffile from current repos
-shelf share --stdout       # print to stdout instead of writing
-shelf share --filter a,b   # only include specific aliases
+shelf install                          # clone all repos from ./shelffile
+shelf install --dir /path              # clone from a shelffile in another directory
+shelf install --concurrency 8          # clone up to 8 repos in parallel (default: 4)
+shelf share                            # generate a shelffile from current repos
+shelf share --stdout                   # print to stdout instead of writing
+shelf share --filter a,b               # only include specific aliases
 ```
+
+## Generating from dependencies
+
+You can auto-generate a shelffile from your project's dependencies:
+
+```bash
+shelf detect --format shelffile > shelffile
+```
+
+This scans `package.json` and `go.mod`, resolves repo URLs, and outputs in shelffile format.
 
 ## Garbage collection
 

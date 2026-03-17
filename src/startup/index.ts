@@ -17,6 +17,8 @@ import { statusCommand } from "../cli/commands/status";
 import { infoCommand } from "../cli/commands/info";
 import { pinCommand } from "../cli/commands/pin";
 import { aliasCommand } from "../cli/commands/alias";
+import { detectCommand } from "../cli/commands/detect";
+import { daemonCommand } from "../cli/commands/daemon";
 import { AppLayer } from "./layers/app";
 import { formatUserError } from "../cli/error-handler";
 
@@ -35,11 +37,13 @@ const shelf = Command.make("shelf").pipe(
 		infoCommand,
 		pinCommand,
 		aliasCommand,
+		detectCommand,
+		daemonCommand,
 	]),
 	Command.withDescription("A global cache of code reference repositories for AI agents"),
 );
 
-const program = Command.run(shelf, { version: "0.1.1" });
+const program = Command.run(shelf, { version: "0.2.0" });
 
 program.pipe(
 	Effect.provide(Layer.mergeAll(AppLayer, BunServicesLayer)),
